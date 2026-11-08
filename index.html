@@ -112,6 +112,12 @@
   .review-actions { position: sticky; bottom: calc(-24px - env(safe-area-inset-bottom)); background: var(--bg); padding: 12px 0 calc(12px + env(safe-area-inset-bottom)); margin-bottom: calc(-24px - env(safe-area-inset-bottom)); }
   .spin { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: sp 0.8s linear infinite; vertical-align: -2px; margin-right: 6px; }
   @keyframes sp { to { transform: rotate(360deg); } }
+  .steps { margin: 0; padding-left: 1.4em; }
+  .steps li { margin-bottom: 18px; }
+  .steps li::marker { font-weight: 700; color: var(--accent); }
+  .steps p { margin: 4px 0 0; }
+  .steps textarea { margin-top: 8px; font-family: ui-monospace, Menlo, monospace; font-size: 13px; }
+  a.btn { text-decoration: none; display: inline-block; }
   .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; flex-wrap: wrap; }
   .actions .spacer { flex: 1; }
   /* detail */
@@ -197,8 +203,8 @@
         <b>Android（Chrome）</b>：右上の ⋮ →「ホーム画面に追加」または「アプリをインストール」</p>
     </div>
     <div class="panel">
-      <h3>🤖 AI読み取り（Claude）</h3>
-      <p class="muted">購入履歴のスクショや服の写真から、商品名・カテゴリ・色・価格などを自動で入力します。
+      <h3>🤖 AI自動読み取り（Claude API・任意）</h3>
+      <p class="muted">設定しなくても、購入履歴はAIアプリ（Claude・ChatGPTなど）への貼り付けで無料で読み取れます。APIキーを設定すると、AIアプリを使わずスクショを選ぶだけで読み取れ、写真からのまとめ登録でもカテゴリや色が自動で入ります。
         使うには Anthropic の APIキー が必要です（<a href="https://platform.claude.com/settings/keys" target="_blank" rel="noopener">ここで発行</a>）。
         読み取り1回につき数円かかります。キーはこの端末にだけ保存されます。</p>
       <div class="row" style="grid-template-columns:1fr auto;align-items:center">
@@ -289,7 +295,7 @@
 <div class="overlay" id="addMenu">
   <div class="sheet">
     <h2><span>どうやって登録しますか？</span><button type="button" class="x" data-close>×</button></h2>
-    <button class="menu-btn" id="mPurchase"><span class="mi">🧾</span><span><b>購入履歴のスクショから</b><small>ユニクロ・GU・Amazon・楽天の購入履歴やレシートを撮るだけ。何点でもまとめて登録</small></span></button>
+    <button class="menu-btn" id="mPurchase"><span class="mi">🧾</span><span><b>購入履歴から</b><small>ユニクロ・GU・Amazon・楽天の購入履歴やレシートのスクショを、AIアプリ（Claude・ChatGPTなど）で読み取って貼り付け。何点でもまとめて登録</small></span></button>
     <button class="menu-btn" id="mPhotos"><span class="mi">📸</span><span><b>写真からまとめて</b><small>服の写真を何枚でも選択。1枚＝1アイテムとして登録</small></span></button>
     <button class="menu-btn" id="mManual"><span class="mi">✏️</span><span><b>1点ずつ入力</b><small>写真・カテゴリ・色を選んで登録</small></span></button>
     <p class="muted" id="aiHint" style="margin:10px 2px 0"></p>
@@ -297,6 +303,46 @@
 </div>
 <input type="file" id="bulkPhotos" accept="image/*" multiple class="hidden">
 <input type="file" id="purchaseShots" accept="image/*" multiple class="hidden">
+
+<!-- AIアプリで読み取り -->
+<div class="overlay" id="pasteOverlay">
+  <div class="sheet">
+    <h2><span>購入履歴から登録</span><button type="button" class="x" data-close>×</button></h2>
+    <ol class="steps">
+      <li><b>指示をコピー</b>
+        <div class="actions" style="justify-content:flex-start;margin-top:8px">
+          <button type="button" class="btn primary" id="copyPrompt">📋 指示をコピー</button>
+        </div>
+      </li>
+      <li><b>AIアプリに送る</b>
+        <p class="muted">購入履歴のスクショ（何枚でも）と、コピーした指示を貼り付けて送ります。</p>
+        <div class="actions" style="justify-content:flex-start;margin-top:6px">
+          <a class="btn" href="https://claude.ai/new" target="_blank" rel="noopener">Claudeを開く</a>
+          <a class="btn" href="https://chatgpt.com/" target="_blank" rel="noopener">ChatGPTを開く</a>
+        </div>
+      </li>
+      <li><b>返ってきた答えをコピーして貼り付け</b>
+        <textarea id="pasteText" rows="5" placeholder='{"shop": ... } のような答えを貼り付け' spellcheck="false" autocapitalize="off"></textarea>
+        <div class="actions" style="justify-content:flex-start;margin-top:6px">
+          <button type="button" class="btn" id="pasteClip">クリップボードから貼り付け</button>
+        </div>
+      </li>
+      <li><b>商品画像も付ける</b> <span class="opt">任意</span>
+        <p class="muted">AIに送ったのと同じスクショを、同じ順番で選ぶと、商品画像を切り抜いて写真にします。</p>
+        <div class="actions" style="justify-content:flex-start;margin-top:6px">
+          <button type="button" class="btn" id="pickShots">スクショを選ぶ</button>
+          <span class="muted" id="shotCount" style="align-self:center"></span>
+        </div>
+        <input type="file" id="pasteShots" accept="image/*" multiple class="hidden">
+      </li>
+    </ol>
+    <div class="actions">
+      <button type="button" class="btn hidden" id="useApi" style="margin-right:auto;font-size:12px">APIキーで自動読み取り</button>
+      <button type="button" class="btn" data-close>キャンセル</button>
+      <button type="button" class="btn primary" id="pasteLoad">読み込む</button>
+    </div>
+  </div>
+</div>
 
 <!-- まとめて確認 -->
 <div class="overlay" id="reviewOverlay">
@@ -624,7 +670,23 @@
     renderAll(); toast(`${list.length}件を登録しました`);
   };
   // AI結果をアプリのカテゴリに合わせる
-  const fixCat = c => cats.includes(c) ? c : (cats.includes('その他') ? 'その他' : cats[0]);
+  // AIアプリが少し違う言葉で返したときのための言い換え
+  const CAT_ALIAS = [
+    [/靴|シューズ|スニーカー|ブーツ|サンダル|パンプス|ローファー/, 'シューズ'],
+    [/コート|ジャケット|ブルゾン|パーカー|アウター|ダウン/, 'アウター'],
+    [/パンツ|ジーンズ|デニム|スカート|ショーツ|ボトム/, 'ボトムス'],
+    [/ワンピース|ドレス|オールインワン/, 'ワンピース'],
+    [/バッグ|鞄|かばん|リュック|ポーチ|財布/, 'バッグ'],
+    [/帽子|キャップ|ハット|ニット帽|ビーニー/, '帽子'],
+    [/下着|インナー|ソックス|靴下|肌着|ブラ|ショーツ/, 'インナー'],
+    [/アクセ|ネックレス|ピアス|指輪|リング|時計|ベルト|マフラー|ストール|手袋|メガネ|サングラス/, 'アクセサリー'],
+    [/シャツ|ニット|セーター|カーディガン|トップス|ブラウス|スウェット|ベスト/, 'トップス'],
+  ];
+  const fixCat = c => {
+    if (cats.includes(c)) return c;
+    for (const [re, to] of CAT_ALIAS) if (re.test(c) && cats.includes(to)) return to;
+    return cats.includes('その他') ? 'その他' : cats[0];
+  };
 
   // 写真からまとめて：1枚＝1アイテム
   $('#bulkPhotos').onchange = async e => {
@@ -660,9 +722,31 @@
     await Promise.all([worker(), worker(), worker()]);
   };
 
-  // 購入履歴のスクショから
+  // 購入履歴の読み取り結果を確認画面に追加する（APIでもAIアプリ貼り付けでも共通）
+  // out: {shop, skipped, items:[{..., image, image_box}]}、shots: 画像（dataURL）の配列。image は1始まり
+  async function addPurchaseRows(out, shots) {
+    for (const it of out.items) {
+      const shot = shots[(it.image || 1) - 1];
+      const photo = shot && validBox(it.image_box) ? await toJpeg(shot, 900, it.image_box).catch(() => null) : null;
+      const dup = items.find(x => x.name === it.name && (x.purchaseDate || '') === (it.purchaseDate || '') && (x.color || '') === (it.color || ''))
+        || review.find(x => x.name === it.name && x.purchaseDate === it.purchaseDate && x.color === it.color && x.size === it.size);
+      const n = Math.max(1, Math.min(it.quantity || 1, 10));
+      for (let q = 0; q < n; q++) review.push({
+        on: !dup, photo, name: it.name, category: fixCat(it.category), color: it.color, brand: it.brand, size: it.size,
+        price: it.price || null, purchaseDate: it.purchaseDate, memo: out.shop ? `購入：${out.shop}` : '', fromPurchase: true,
+        note: dup ? '登録済みかもしれません' : '',
+      });
+    }
+  }
+  function purchaseSummary(skipped) {
+    if (!review.length) $('#reviewStatus').textContent = skipped ? `服や小物が見つかりませんでした（それ以外の商品 ${skipped} 点は除外しました）。` : '商品を見つけられませんでした。購入履歴の画面が写っているか確認してください。';
+    else if (skipped) $('#reviewStatus').textContent += `（服や小物以外の ${skipped} 点は除外しました）`;
+  }
+
+  // APIキーで自動読み取り
   $('#purchaseShots').onchange = async e => {
     const files = [...e.target.files]; e.target.value = ''; if (!files.length) return;
+    $('#pasteOverlay').classList.remove('open');
     openReview('購入履歴から登録');
     const key = apiKey();
     const ai = await loadAI().catch(() => null);
@@ -674,24 +758,107 @@
         const shot = await toJpeg(f, 1800);
         const out = await ai.readPurchases(key, shot, cats, today());
         skipped += out.skipped || 0;
-        for (const it of out.items) {
-          const photo = validBox(it.image_box) ? await toJpeg(shot, 900, it.image_box).catch(() => null) : null;
-          const dup = items.find(x => x.name === it.name && (x.purchaseDate || '') === (it.purchaseDate || '') && (x.color || '') === (it.color || ''))
-            || review.find(x => x.name === it.name && x.purchaseDate === it.purchaseDate && x.color === it.color && x.size === it.size);
-          const n = Math.max(1, Math.min(it.quantity || 1, 10));
-          for (let q = 0; q < n; q++) review.push({
-            on: !dup, photo, name: it.name, category: fixCat(it.category), color: it.color, brand: it.brand, size: it.size,
-            price: it.price || null, purchaseDate: it.purchaseDate, memo: out.shop ? `購入：${out.shop}` : '', fromPurchase: true,
-            note: dup ? '登録済みかもしれません' : '',
-          });
-        }
+        await addPurchaseRows(out, [shot]);
       } catch (err) {
         toast(err instanceof ai.AIError ? err.message : '読み取りに失敗しました');
       }
       pending--; renderReview();
     }));
-    if (!review.length) $('#reviewStatus').textContent = skipped ? `服や小物が見つかりませんでした（それ以外の商品 ${skipped} 点は除外しました）。` : '商品を見つけられませんでした。購入履歴の画面が写っているか確認してください。';
-    else if (skipped) $('#reviewStatus').textContent += `（服や小物以外の ${skipped} 点は除外しました）`;
+    purchaseSummary(skipped);
+  };
+
+  // ---------- AIアプリ（Claude・ChatGPTなど）で読み取って貼り付け ----------
+  function buildPrompt() {
+    return `添付した画像は、ネットショップ（ユニクロ・GU・Amazon・楽天など）の購入履歴や注文確認メール、お店のレシートのスクリーンショットです。
+写っている商品のうち、服・靴・バッグ・帽子・アクセサリーなど身につける物だけを抜き出して、下の形式のJSONだけを返してください。説明文は不要です。
+
+ルール
+- 日用品・食品・本・家電などは含めず、その数を skipped に入れる
+- 商品名が見切れて読めないものは含めない
+- name：ブランド名・色・サイズ・品番を除いた短い商品名
+- category：次のどれか → ${cats.join('、')}
+- color：黒・白・グレー・ネイビー・ベージュ・ブラウン・カーキ・青・赤・緑などの日本語の色名（「09 BLACK」→「黒」）。不明なら ""
+- size：M、L、26.5cm など。不明なら ""
+- brand：不明なら ""。ユニクロ・GUの商品はお店の名前
+- price：1点あたりの税込価格（数字のみ）。不明なら 0
+- quantity：個数
+- purchaseDate：注文日・購入日を YYYY-MM-DD で。年が書かれていなければ今日（${today()}）より未来にならない直近の年。不明なら ""
+- image：何枚目の画像に写っているか（1から数える）
+- image_box：その画像の中の商品写真の位置。画像の左上を0、右下を1000とした座標。商品写真が無ければすべて0
+
+形式
+{"shop":"お店の名前","skipped":0,"items":[{"name":"","brand":"","category":"","color":"","size":"","price":0,"quantity":1,"purchaseDate":"","image":1,"image_box":{"x0":0,"y0":0,"x1":0,"y1":0}}]}`;
+  }
+
+  // AIアプリの答え（コードブロックや前後の文章が付いていてもよい）からJSONを取り出す
+  function parseAIText(text) {
+    const tryParse = t => {
+      t = t.trim();
+      try { return JSON.parse(t); } catch {}
+      const a = t.search(/[\[{]/), b = Math.max(t.lastIndexOf('}'), t.lastIndexOf(']'));
+      if (a >= 0 && b > a) { try { return JSON.parse(t.slice(a, b + 1)); } catch {} }
+      return undefined;
+    };
+    const blocks = [...text.matchAll(/```(?:json)?\s*([\s\S]*?)```/gi)].map(m => m[1]);
+    const parsed = (blocks.length ? blocks : [text]).map(tryParse).filter(v => v !== undefined);
+    if (!parsed.length) return null;
+    const out = { shop: '', skipped: 0, items: [] };
+    for (const p of parsed) {
+      const list = Array.isArray(p) ? p : Array.isArray(p.items) ? p.items : p.name ? [p] : [];
+      if (!Array.isArray(p)) { out.shop ||= String(p.shop || ''); out.skipped += Number(p.skipped) || 0; }
+      out.items.push(...list);
+    }
+    const str = v => (v == null ? '' : String(v)).trim();
+    const num = v => Number(String(v ?? '').replace(/[^\d.]/g, '')) || 0;
+    const date = v => { const m = str(v).match(/(\d{4})\D(\d{1,2})\D(\d{1,2})/); return m ? `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}` : ''; };
+    out.items = out.items.filter(it => it && str(it.name)).map(it => ({
+      name: str(it.name), brand: str(it.brand), category: str(it.category), color: str(it.color), size: str(it.size),
+      price: num(it.price), quantity: Math.round(num(it.quantity)) || 1, purchaseDate: date(it.purchaseDate),
+      image: Math.round(num(it.image)) || 1,
+      image_box: it.image_box && typeof it.image_box === 'object' ? { x0: num(it.image_box.x0), y0: num(it.image_box.y0), x1: num(it.image_box.x1), y1: num(it.image_box.y1) } : null,
+    }));
+    return out;
+  }
+
+  let pasteShots = [];
+  function openPaste() {
+    $('#addMenu').classList.remove('open');
+    $('#pasteText').value = ''; pasteShots = []; $('#shotCount').textContent = '';
+    $('#useApi').classList.toggle('hidden', !apiKey());
+    $('#pasteOverlay').classList.add('open');
+  }
+  $('#copyPrompt').onclick = async () => {
+    const text = buildPrompt();
+    try { await navigator.clipboard.writeText(text); }
+    catch {
+      const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); ta.remove();
+    }
+    toast('指示をコピーしました。AIアプリに貼り付けてください');
+  };
+  $('#pasteClip').onclick = async () => {
+    try { $('#pasteText').value = await navigator.clipboard.readText(); }
+    catch { toast('入力欄を長押しして「ペースト」してください'); $('#pasteText').focus(); }
+  };
+  $('#pickShots').onclick = () => $('#pasteShots').click();
+  $('#pasteShots').onchange = async e => {
+    const files = [...e.target.files]; e.target.value = ''; if (!files.length) return;
+    pasteShots = [];
+    for (const f of files) pasteShots.push(await toJpeg(f, 1800).catch(() => null));
+    $('#shotCount').textContent = `${files.length}枚 選択済み`;
+  };
+  $('#useApi').onclick = () => $('#purchaseShots').click();
+  $('#pasteLoad').onclick = async () => {
+    const text = $('#pasteText').value;
+    if (!text.trim()) return toast('AIの答えを貼り付けてください');
+    const out = parseAIText(text);
+    if (!out) return toast('読み取れませんでした。AIの答えをすべてコピーして貼り付けてください');
+    if (!out.items.length && !out.skipped) return toast('商品が見つかりませんでした');
+    $('#pasteOverlay').classList.remove('open');
+    openReview('購入履歴から登録');
+    await addPurchaseRows(out, pasteShots);
+    renderReview();
+    purchaseSummary(out.skipped);
   };
 
   // APIキー設定
@@ -749,15 +916,12 @@
   document.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.overlay.open').forEach(o => o.classList.remove('open')); });
 
   $('#addBtn').onclick = () => {
-    $('#aiHint').textContent = apiKey() ? '' : '※ AI読み取りを使うには「データ」タブでAPIキーを設定してください。未設定でも写真のまとめ登録はできます（名前・カテゴリは後で選びます）。';
+    $('#aiHint').textContent = apiKey() ? '' : '※「写真からまとめて」では、名前・カテゴリを確認画面で選びます（「データ」タブでAPIキーを設定すると自動で入ります。有料）。';
     $('#addMenu').classList.add('open');
   };
   $('#mManual').onclick = () => { $('#addMenu').classList.remove('open'); openEdit(null); };
   $('#mPhotos').onclick = () => $('#bulkPhotos').click();
-  $('#mPurchase').onclick = () => {
-    if (!apiKey()) { toast('先に「データ」タブでAPIキーを設定してください'); $('#addMenu').classList.remove('open'); switchView('settings'); $('#apiKey').focus(); return; }
-    $('#purchaseShots').click();
-  };
+  $('#mPurchase').onclick = openPaste;
   $('#q').oninput = e => { state.q = e.target.value; renderList(); };
   $('#fSeason').onchange = e => { state.season = e.target.value; renderList(); };
   $('#sort').onchange = e => { state.sort = e.target.value; renderList(); };
