@@ -94,6 +94,24 @@
   summary::-webkit-details-marker { display: none; }
   summary::before { content: '＋ '; }
   details[open] summary::before { content: '− '; }
+  .menu-btn { display: flex; gap: 14px; align-items: center; width: 100%; text-align: left; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 10px; color: var(--ink); }
+  .menu-btn .mi { font-size: 28px; flex: none; }
+  .menu-btn b { display: block; font-size: 15px; }
+  .menu-btn small { display: block; color: var(--sub); font-size: 12px; margin-top: 2px; line-height: 1.5; }
+  .rv { display: grid; grid-template-columns: 26px 72px 1fr; gap: 10px; align-items: start; background: var(--card); border-radius: var(--radius); padding: 10px; margin-top: 10px; }
+  .rv.off { opacity: .45; }
+  .rv input[type=checkbox] { width: 22px; height: 22px; margin-top: 24px; }
+  .rv .t { width: 72px; height: 72px; border-radius: 10px; background: var(--accent-soft); display: flex; align-items: center; justify-content: center; font-size: 28px; overflow: hidden; }
+  .rv .t img { width: 100%; height: 100%; object-fit: cover; }
+  .rv .f { display: grid; gap: 6px; min-width: 0; }
+  .rv .f input, .rv .f select { padding: 6px 10px; }
+  .rv .f .two { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 6px; }
+  .rv .f .two.pd { grid-template-columns: minmax(0,4fr) minmax(0,6fr); }
+  .rv .f input { min-width: 0; }
+  .rv .note { font-size: 11px; color: var(--fav); }
+  .review-actions { position: sticky; bottom: calc(-24px - env(safe-area-inset-bottom)); background: var(--bg); padding: 12px 0 calc(12px + env(safe-area-inset-bottom)); margin-bottom: calc(-24px - env(safe-area-inset-bottom)); }
+  .spin { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: sp 0.8s linear infinite; vertical-align: -2px; margin-right: 6px; }
+  @keyframes sp { to { transform: rotate(360deg); } }
   .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; flex-wrap: wrap; }
   .actions .spacer { flex: 1; }
   /* detail */
@@ -179,6 +197,21 @@
         <b>Android（Chrome）</b>：右上の ⋮ →「ホーム画面に追加」または「アプリをインストール」</p>
     </div>
     <div class="panel">
+      <h3>🤖 AI読み取り（Claude）</h3>
+      <p class="muted">購入履歴のスクショや服の写真から、商品名・カテゴリ・色・価格などを自動で入力します。
+        使うには Anthropic の APIキー が必要です（<a href="https://platform.claude.com/settings/keys" target="_blank" rel="noopener">ここで発行</a>）。
+        読み取り1回につき数円かかります。キーはこの端末にだけ保存されます。</p>
+      <div class="row" style="grid-template-columns:1fr auto;align-items:center">
+        <input type="password" id="apiKey" placeholder="sk-ant-..." autocomplete="off" spellcheck="false">
+        <button class="btn" id="apiKeyShow" type="button">表示</button>
+      </div>
+      <div class="actions">
+        <span class="muted" id="apiKeyState" style="margin-right:auto"></span>
+        <button class="btn danger" id="apiKeyDel">削除</button>
+        <button class="btn primary" id="apiKeySave">保存して確認</button>
+      </div>
+    </div>
+    <div class="panel">
       <h3>バックアップ</h3>
       <p class="muted">データはこのブラウザ内に保存されています。機種変更やブラウザのデータ削除に備えて、定期的に書き出しておくと安心です。</p>
       <div class="actions" style="justify-content:flex-start">
@@ -251,6 +284,32 @@
   </form>
 </div>
 <datalist id="colorList"></datalist><datalist id="brandList"></datalist><datalist id="locList"></datalist>
+
+<!-- 追加メニュー -->
+<div class="overlay" id="addMenu">
+  <div class="sheet">
+    <h2><span>どうやって登録しますか？</span><button type="button" class="x" data-close>×</button></h2>
+    <button class="menu-btn" id="mPurchase"><span class="mi">🧾</span><span><b>購入履歴のスクショから</b><small>ユニクロ・GU・Amazon・楽天の購入履歴やレシートを撮るだけ。何点でもまとめて登録</small></span></button>
+    <button class="menu-btn" id="mPhotos"><span class="mi">📸</span><span><b>写真からまとめて</b><small>服の写真を何枚でも選択。1枚＝1アイテムとして登録</small></span></button>
+    <button class="menu-btn" id="mManual"><span class="mi">✏️</span><span><b>1点ずつ入力</b><small>写真・カテゴリ・色を選んで登録</small></span></button>
+    <p class="muted" id="aiHint" style="margin:10px 2px 0"></p>
+  </div>
+</div>
+<input type="file" id="bulkPhotos" accept="image/*" multiple class="hidden">
+<input type="file" id="purchaseShots" accept="image/*" multiple class="hidden">
+
+<!-- まとめて確認 -->
+<div class="overlay" id="reviewOverlay">
+  <div class="sheet" id="reviewSheet">
+    <h2><span id="reviewTitle">確認して登録</span><button type="button" class="x" data-close>×</button></h2>
+    <div id="reviewStatus" class="muted"></div>
+    <div id="reviewList"></div>
+    <div class="actions review-actions">
+      <button type="button" class="btn" data-close>キャンセル</button>
+      <button type="button" class="btn primary" id="reviewSave" disabled>登録</button>
+    </div>
+  </div>
+</div>
 
 <!-- 詳細モーダル -->
 <div class="overlay" id="detailOverlay">
@@ -473,6 +532,188 @@
     else if (next) openEdit(null, false, { category: item.category, season: item.season, purchaseDate: item.purchaseDate, location: item.location });
   };
 
+  // ---------- まとめて登録 ----------
+  const apiKey = () => localStorage.getItem('closet-api-key') || '';
+  let aiMod = null;
+  const loadAI = async () => aiMod || (aiMod = await import('./ai.js'));
+  let review = [];   // 確認待ちの候補
+  let pending = 0;   // 読み取り中の数
+
+  function loadImg(src) {
+    return new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('画像を読み込めませんでした')); i.src = src; });
+  }
+  // 画像を縮小（max: 長辺）。box があればその範囲（0〜1000の座標）だけ切り抜く
+  async function toJpeg(fileOrUrl, max, box) {
+    const url = typeof fileOrUrl === 'string' ? fileOrUrl : URL.createObjectURL(fileOrUrl);
+    try {
+      const im = await loadImg(url);
+      let sx = 0, sy = 0, sw = im.width, sh = im.height;
+      if (box) {
+        sx = box.x0 / 1000 * im.width; sy = box.y0 / 1000 * im.height;
+        sw = (box.x1 - box.x0) / 1000 * im.width; sh = (box.y1 - box.y0) / 1000 * im.height;
+        const pad = Math.max(sw, sh) * 0.04;
+        sx = Math.max(0, sx - pad); sy = Math.max(0, sy - pad);
+        sw = Math.min(im.width - sx, sw + pad * 2); sh = Math.min(im.height - sy, sh + pad * 2);
+      }
+      const s = Math.min(1, max / Math.max(sw, sh));
+      const c = document.createElement('canvas'); c.width = Math.round(sw * s); c.height = Math.round(sh * s);
+      const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
+      g.drawImage(im, sx, sy, sw, sh, 0, 0, c.width, c.height);
+      return c.toDataURL('image/jpeg', 0.85);
+    } finally { if (typeof fileOrUrl !== 'string') URL.revokeObjectURL(url); }
+  }
+  const validBox = b => b && b.x1 - b.x0 > 20 && b.y1 - b.y0 > 20;
+
+  function openReview(title) {
+    review = []; pending = 0;
+    $('#reviewTitle').textContent = title;
+    $('#addMenu').classList.remove('open');
+    $('#reviewOverlay').classList.add('open');
+    renderReview();
+  }
+  function renderReview() {
+    const on = review.filter(r => r.on).length;
+    $('#reviewStatus').innerHTML = pending ? `<span class="spin"></span>読み取り中…（残り ${pending}）` : (review.length ? 'チェックを外したものは登録されません。内容は後からでも直せます。' : '');
+    $('#reviewSave').disabled = !on;
+    $('#reviewSave').textContent = on ? `${on}件を登録` : '登録';
+    const catOpts = sel => [...new Set([...cats, sel])].map(c => `<option ${c === sel ? 'selected' : ''}>${esc(c)}</option>`).join('');
+    $('#reviewList').innerHTML = review.map((r, k) => `
+      <div class="rv ${r.on ? '' : 'off'}" data-k="${k}">
+        <input type="checkbox" data-rf="on" ${r.on ? 'checked' : ''} aria-label="登録する">
+        <div class="t">${r.photo ? `<img src="${r.photo}" alt="">` : icon(r.category)}</div>
+        <div class="f">
+          ${r.note ? `<div class="note">${esc(r.note)}</div>` : ''}
+          <input data-rf="name" value="${esc(r.name)}" placeholder="名前（空欄なら自動）">
+          <div class="two">
+            <select data-rf="category">${catOpts(r.category)}</select>
+            <input data-rf="color" value="${esc(r.color)}" placeholder="色" list="colorList">
+          </div>
+          <div class="two">
+            <input data-rf="brand" value="${esc(r.brand)}" placeholder="ブランド" list="brandList">
+            <input data-rf="size" value="${esc(r.size)}" placeholder="サイズ">
+          </div>
+          ${r.fromPurchase ? `<div class="two pd">
+            <input data-rf="price" value="${r.price ? '¥' + r.price : ''}" placeholder="価格" inputmode="numeric">
+            <input data-rf="purchaseDate" type="date" value="${esc(r.purchaseDate)}">
+          </div>` : ''}
+        </div>
+      </div>`).join('');
+  }
+  $('#reviewList').addEventListener('input', e => {
+    const el = e.target, k = el.closest('[data-k]')?.dataset.k, f = el.dataset.rf; if (k == null || !f) return;
+    const r = review[k];
+    if (f === 'on') { r.on = el.checked; el.closest('.rv').classList.toggle('off', !r.on); const on = review.filter(x => x.on).length; $('#reviewSave').disabled = !on; $('#reviewSave').textContent = on ? `${on}件を登録` : '登録'; }
+    else if (f === 'price') r.price = Number(el.value.replace(/[^\d]/g, '')) || null;
+    else r[f] = el.value;
+    if (f === 'category') el.closest('.rv').querySelector('.t').innerHTML = r.photo ? `<img src="${r.photo}" alt="">` : icon(r.category);
+  });
+  $('#reviewSave').onclick = async () => {
+    const list = review.filter(r => r.on); if (!list.length) return;
+    let t = Date.now() + list.length;  // 一覧（新しい順）で確認画面と同じ並びになるように
+    for (const r of list) {
+      const item = {
+        id: uid(), createdAt: t--, updatedAt: Date.now(), wearCount: 0, wearLog: [], fav: false,
+        name: r.name.trim() || ((r.color ? r.color + 'の' : '') + r.category),
+        category: r.category, color: r.color.trim(), brand: r.brand.trim(), size: r.size.trim(),
+        purchaseDate: r.purchaseDate || '', price: r.price || null, location: '', memo: r.memo || '',
+        season: [], photo: r.photo || null,
+      };
+      await dbPut(item); items.push(item);
+    }
+    $('#reviewOverlay').classList.remove('open');
+    renderAll(); toast(`${list.length}件を登録しました`);
+  };
+  // AI結果をアプリのカテゴリに合わせる
+  const fixCat = c => cats.includes(c) ? c : (cats.includes('その他') ? 'その他' : cats[0]);
+
+  // 写真からまとめて：1枚＝1アイテム
+  $('#bulkPhotos').onchange = async e => {
+    const files = [...e.target.files]; e.target.value = ''; if (!files.length) return;
+    openReview(`写真から ${files.length} 件`);
+    const key = apiKey();
+    const base = state.cat || cats[0];
+    const rows = [];
+    for (const f of files) {
+      try {
+        const photo = await toJpeg(f, 900);
+        const r = { on: true, photo, name: '', category: base, color: '', brand: '', size: '', price: null, purchaseDate: '', fromPurchase: false };
+        review.push(r); rows.push(r);
+      } catch { toast('読み込めない画像がありました'); }
+    }
+    renderReview();
+    if (!key) return;
+    const ai = await loadAI().catch(() => null);
+    if (!ai) { toast('AIを読み込めませんでした（オフライン？）'); return; }
+    pending = rows.length; renderReview();
+    // 同時に3件ずつ読み取る
+    let idx = 0, failed = 0;
+    const worker = async () => {
+      while (idx < rows.length) {
+        const r = rows[idx++];
+        try {
+          const o = await ai.readPhoto(key, r.photo, cats);
+          Object.assign(r, { name: o.name, category: fixCat(o.category), color: o.color, brand: o.brand, size: o.size });
+        } catch (err) { failed++; r.note = 'AIで読み取れませんでした'; if (err instanceof ai.AIError && failed === 1) toast(err.message); }
+        pending--; renderReview();
+      }
+    };
+    await Promise.all([worker(), worker(), worker()]);
+  };
+
+  // 購入履歴のスクショから
+  $('#purchaseShots').onchange = async e => {
+    const files = [...e.target.files]; e.target.value = ''; if (!files.length) return;
+    openReview('購入履歴から登録');
+    const key = apiKey();
+    const ai = await loadAI().catch(() => null);
+    if (!ai) { $('#reviewStatus').textContent = 'AIを読み込めませんでした。インターネット接続を確認してください。'; return; }
+    pending = files.length; renderReview();
+    let skipped = 0;
+    await Promise.all(files.map(async f => {
+      try {
+        const shot = await toJpeg(f, 1800);
+        const out = await ai.readPurchases(key, shot, cats, today());
+        skipped += out.skipped || 0;
+        for (const it of out.items) {
+          const photo = validBox(it.image_box) ? await toJpeg(shot, 900, it.image_box).catch(() => null) : null;
+          const dup = items.find(x => x.name === it.name && (x.purchaseDate || '') === (it.purchaseDate || '') && (x.color || '') === (it.color || ''))
+            || review.find(x => x.name === it.name && x.purchaseDate === it.purchaseDate && x.color === it.color && x.size === it.size);
+          const n = Math.max(1, Math.min(it.quantity || 1, 10));
+          for (let q = 0; q < n; q++) review.push({
+            on: !dup, photo, name: it.name, category: fixCat(it.category), color: it.color, brand: it.brand, size: it.size,
+            price: it.price || null, purchaseDate: it.purchaseDate, memo: out.shop ? `購入：${out.shop}` : '', fromPurchase: true,
+            note: dup ? '登録済みかもしれません' : '',
+          });
+        }
+      } catch (err) {
+        toast(err instanceof ai.AIError ? err.message : '読み取りに失敗しました');
+      }
+      pending--; renderReview();
+    }));
+    if (!review.length) $('#reviewStatus').textContent = skipped ? `服や小物が見つかりませんでした（それ以外の商品 ${skipped} 点は除外しました）。` : '商品を見つけられませんでした。購入履歴の画面が写っているか確認してください。';
+    else if (skipped) $('#reviewStatus').textContent += `（服や小物以外の ${skipped} 点は除外しました）`;
+  };
+
+  // APIキー設定
+  function renderKey() {
+    const k = apiKey();
+    $('#apiKey').value = k;
+    $('#apiKeyState').textContent = k ? '✓ 設定済み' : '未設定';
+  }
+  $('#apiKeyShow').onclick = () => { const el = $('#apiKey'); el.type = el.type === 'password' ? 'text' : 'password'; $('#apiKeyShow').textContent = el.type === 'password' ? '表示' : '隠す'; };
+  $('#apiKeyDel').onclick = () => { localStorage.removeItem('closet-api-key'); renderKey(); toast('APIキーを削除しました'); };
+  $('#apiKeySave').onclick = async () => {
+    const k = $('#apiKey').value.trim(); if (!k) return toast('APIキーを入力してください');
+    const b = $('#apiKeySave'); b.disabled = true; b.innerHTML = '<span class="spin"></span>確認中';
+    try {
+      const ai = await loadAI();
+      await ai.testKey(k);
+      localStorage.setItem('closet-api-key', k); renderKey(); toast('APIキーを保存しました');
+    } catch (err) { toast(err.message || '確認できませんでした'); }
+    finally { b.disabled = false; b.textContent = '保存して確認'; }
+  };
+  renderKey();
+
   // ---------- 操作 ----------
   async function update(id, fn) {
     const i = items.find(x => x.id === id); if (!i) return;
@@ -507,7 +748,16 @@
   document.querySelectorAll('.overlay').forEach(o => o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); }));
   document.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.overlay.open').forEach(o => o.classList.remove('open')); });
 
-  $('#addBtn').onclick = () => openEdit(null);
+  $('#addBtn').onclick = () => {
+    $('#aiHint').textContent = apiKey() ? '' : '※ AI読み取りを使うには「データ」タブでAPIキーを設定してください。未設定でも写真のまとめ登録はできます（名前・カテゴリは後で選びます）。';
+    $('#addMenu').classList.add('open');
+  };
+  $('#mManual').onclick = () => { $('#addMenu').classList.remove('open'); openEdit(null); };
+  $('#mPhotos').onclick = () => $('#bulkPhotos').click();
+  $('#mPurchase').onclick = () => {
+    if (!apiKey()) { toast('先に「データ」タブでAPIキーを設定してください'); $('#addMenu').classList.remove('open'); switchView('settings'); $('#apiKey').focus(); return; }
+    $('#purchaseShots').click();
+  };
   $('#q').oninput = e => { state.q = e.target.value; renderList(); };
   $('#fSeason').onchange = e => { state.season = e.target.value; renderList(); };
   $('#sort').onchange = e => { state.sort = e.target.value; renderList(); };
