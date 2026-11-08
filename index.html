@@ -81,8 +81,19 @@
   .seasons { display: flex; gap: 6px; flex-wrap: wrap; }
   .seasons label { display: inline-flex; align-items: center; gap: 4px; background: var(--card); border: 1px solid var(--line); padding: 6px 12px; border-radius: 999px; font-size: 14px; color: var(--ink); margin: 0; cursor: pointer; }
   .seasons input { width: auto; margin: 0; }
-  .photo-pick { aspect-ratio: 4/3; background: var(--accent-soft); border: 2px dashed var(--line); border-radius: var(--radius); display: flex; align-items: center; justify-content: center; color: var(--sub); overflow: hidden; cursor: pointer; position: relative; }
+  .photo-pick { aspect-ratio: 16/9; background: var(--accent-soft); border: 2px dashed var(--line); border-radius: var(--radius); display: flex; align-items: center; justify-content: center; color: var(--sub); overflow: hidden; cursor: pointer; position: relative; }
   .photo-pick img { width: 100%; height: 100%; object-fit: contain; background: #fff; }
+  .pick { display: flex; flex-wrap: wrap; gap: 6px; }
+  .pick button { border: 1px solid var(--line); background: var(--card); color: var(--ink); padding: 8px 12px; border-radius: 999px; font-size: 14px; display: inline-flex; align-items: center; gap: 6px; }
+  .pick button.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .pick .sw { width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(0,0,0,.15); flex: none; }
+  .color-other { margin-top: 8px; }
+  .opt { color: var(--sub); font-size: 11px; margin-left: 4px; }
+  details { margin-bottom: 4px; }
+  summary { cursor: pointer; color: var(--accent); font-size: 14px; padding: 8px 0 12px; list-style: none; }
+  summary::-webkit-details-marker { display: none; }
+  summary::before { content: '＋ '; }
+  details[open] summary::before { content: '− '; }
   .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; flex-wrap: wrap; }
   .actions .spacer { flex: 1; }
   /* detail */
@@ -202,31 +213,39 @@
       <input type="file" id="photoInput" accept="image/*" class="hidden">
       <div class="actions hidden" id="photoActions" style="margin-top:6px"><button type="button" class="btn" id="photoRemove">写真を削除</button></div>
     </div>
-    <div class="field"><label>名前 *</label><input name="name" required placeholder="例：白のオックスフォードシャツ"></div>
-    <div class="row">
-      <div class="field"><label>カテゴリ</label><select name="category" id="catSelect"></select></div>
-      <div class="field"><label>色</label><input name="color" list="colorList" placeholder="例：白"></div>
+    <div class="field"><label>カテゴリ</label>
+      <div class="pick" id="catPick"></div>
+      <input type="hidden" name="category">
     </div>
-    <div class="row">
-      <div class="field"><label>ブランド</label><input name="brand" list="brandList"></div>
-      <div class="field"><label>サイズ</label><input name="size" placeholder="例：M / 26.5cm"></div>
+    <div class="field"><label>色</label>
+      <div class="pick" id="colorPick"></div>
+      <input name="color" list="colorList" placeholder="ほかの色を入力" class="color-other">
     </div>
-    <div class="field"><label>シーズン</label>
-      <div class="seasons">
-        <label><input type="checkbox" name="season" value="春">春</label>
-        <label><input type="checkbox" name="season" value="夏">夏</label>
-        <label><input type="checkbox" name="season" value="秋">秋</label>
-        <label><input type="checkbox" name="season" value="冬">冬</label>
+    <div class="field"><label>名前 <span class="opt">空欄なら「白のトップス」のように自動で付けます</span></label><input name="name" placeholder="例：オックスフォードシャツ"></div>
+    <details id="moreFields">
+      <summary>もっと詳しく（ブランド・サイズ・シーズン・価格など）</summary>
+      <div class="row">
+        <div class="field"><label>ブランド</label><input name="brand" list="brandList"></div>
+        <div class="field"><label>サイズ</label><input name="size" placeholder="例：M / 26.5cm"></div>
       </div>
-    </div>
-    <div class="row">
-      <div class="field"><label>購入日</label><input type="date" name="purchaseDate"></div>
-      <div class="field"><label>価格（円）</label><input type="number" name="price" min="0" inputmode="numeric"></div>
-    </div>
-    <div class="field"><label>収納場所</label><input name="location" list="locList" placeholder="例：クローゼット上段"></div>
-    <div class="field"><label>メモ</label><textarea name="memo" rows="3" placeholder="素材、お手入れ方法、購入店など"></textarea></div>
+      <div class="field"><label>シーズン</label>
+        <div class="seasons">
+          <label><input type="checkbox" name="season" value="春">春</label>
+          <label><input type="checkbox" name="season" value="夏">夏</label>
+          <label><input type="checkbox" name="season" value="秋">秋</label>
+          <label><input type="checkbox" name="season" value="冬">冬</label>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field"><label>購入日</label><input type="date" name="purchaseDate"></div>
+        <div class="field"><label>価格（円）</label><input type="number" name="price" min="0" inputmode="numeric"></div>
+      </div>
+      <div class="field"><label>収納場所</label><input name="location" list="locList" placeholder="例：クローゼット上段"></div>
+      <div class="field"><label>メモ</label><textarea name="memo" rows="3" placeholder="素材、お手入れ方法、購入店など"></textarea></div>
+    </details>
     <div class="actions">
       <button type="button" class="btn" data-close>キャンセル</button>
+      <button type="submit" class="btn" id="saveNext" value="next">保存して次へ</button>
       <button type="submit" class="btn primary">保存</button>
     </div>
   </form>
@@ -368,22 +387,44 @@
     $('#photoPick').innerHTML = src ? `<img src="${src}" alt="">` : '<span>📷 タップして写真を追加</span>';
     $('#photoActions').classList.toggle('hidden', !src);
   }
-  function openEdit(item, isCopy) {
+  const COLORS = { '黒':'#222','白':'#fff','グレー':'#9a9a9a','ネイビー':'#1f2b4d','ベージュ':'#d8c3a0','ブラウン':'#7a5230','カーキ':'#7d7a4a','青':'#3b6fd1','赤':'#c8372d','緑':'#3f8a4f' };
+  function renderPicks() {
+    const f = $('#editForm'), cat = f.elements.category.value, col = f.elements.color.value.trim();
+    $('#catPick').innerHTML = [...new Set([...cats, cat].filter(Boolean))].map(c =>
+      `<button type="button" data-pc="${esc(c)}" class="${c === cat ? 'on' : ''}">${icon(c)} ${esc(c)}</button>`).join('');
+    // よく使う色を先頭に、基本色を後ろに
+    const used = {}; items.forEach(i => i.color && (used[i.color] = (used[i.color] || 0) + 1));
+    const list = [...new Set([...Object.keys(used).sort((x, y) => used[y] - used[x]), ...Object.keys(COLORS)])].slice(0, 14);
+    if (col && !list.includes(col)) list.unshift(col);
+    $('#colorPick').innerHTML = list.map(c =>
+      `<button type="button" data-pcol="${esc(c)}" class="${c === col ? 'on' : ''}">${COLORS[c] ? `<span class="sw" style="background:${COLORS[c]}"></span>` : ''}${esc(c)}</button>`).join('');
+  }
+  $('#catPick').addEventListener('click', e => { const b = e.target.closest('[data-pc]'); if (!b) return; $('#editForm').elements.category.value = b.dataset.pc; renderPicks(); });
+  $('#colorPick').addEventListener('click', e => {
+    const b = e.target.closest('[data-pcol]'); if (!b) return;
+    const el = $('#editForm').elements.color; el.value = el.value === b.dataset.pcol ? '' : b.dataset.pcol; renderPicks();
+  });
+  $('#editForm').elements.color.addEventListener('input', renderPicks);
+
+  function openEdit(item, isCopy, keep) {
     editing = item && !isCopy ? item : null;
     const f = $('#editForm');
     f.reset();
     $('#editTitle').textContent = editing ? 'アイテムを編集' : 'アイテムを追加';
-    $('#catSelect').innerHTML = cats.map(c => `<option>${esc(c)}</option>`).join('');
+    $('#saveNext').classList.toggle('hidden', !!editing);
     fillDatalists();
-    const src = item || { category: state.cat || cats[0] };
+    const src = item || keep || { category: state.cat || cats[0] };
     ['name','category','color','brand','size','purchaseDate','price','location','memo'].forEach(k => { if (src[k] != null) f.elements[k].value = src[k]; });
     if (isCopy) f.elements.name.value = (src.name || '') + '（コピー）';
-    if (src.category && !cats.includes(src.category)) { $('#catSelect').insertAdjacentHTML('beforeend', `<option>${esc(src.category)}</option>`); f.elements.category.value = src.category; }
     f.querySelectorAll('[name=season]').forEach(cb => cb.checked = (src.season || []).includes(cb.value));
-    setPhoto(src.photo || null);
+    // 詳細項目が入っているときだけ「もっと詳しく」を開いておく
+    const d = item || keep;
+    $('#moreFields').open = !!(d && (d.brand || d.size || d.purchaseDate || d.price || d.location || d.memo || (d.season || []).length));
+    setPhoto(item ? item.photo || null : null);
+    renderPicks();
     $('#detailOverlay').classList.remove('open');
     $('#editOverlay').classList.add('open');
-    setTimeout(() => !item && f.elements.name.focus(), 50);
+    $('#editForm').scrollTop = 0;
   }
 
   function resizeImage(file, max = 900) {
@@ -411,9 +452,11 @@
   $('#editForm').onsubmit = async e => {
     e.preventDefault();
     const f = e.target, v = k => f.elements[k].value.trim();
+    const next = e.submitter && e.submitter.value === 'next';
+    const autoName = (v('color') ? v('color') + 'の' : '') + v('category');
     const item = {
       ...(editing || { id: uid(), createdAt: Date.now(), wearCount: 0, wearLog: [], fav: false }),
-      name: v('name'), category: v('category'), color: v('color'), brand: v('brand'), size: v('size'),
+      name: v('name') || autoName, category: v('category'), color: v('color'), brand: v('brand'), size: v('size'),
       purchaseDate: v('purchaseDate'), price: v('price') ? Number(v('price')) : null,
       location: v('location'), memo: v('memo'),
       season: [...f.querySelectorAll('[name=season]:checked')].map(c => c.value),
@@ -424,8 +467,10 @@
     idx >= 0 ? items[idx] = item : items.push(item);
     $('#editOverlay').classList.remove('open');
     renderAll();
-    toast(editing ? '更新しました' : '登録しました');
+    toast(editing ? '更新しました' : `「${item.name}」を登録しました`);
     if (editing) openDetail(item.id);
+    // 続けて登録：カテゴリ・シーズン・購入日・収納場所は引き継ぐ（まとめて登録しやすいように）
+    else if (next) openEdit(null, false, { category: item.category, season: item.season, purchaseDate: item.purchaseDate, location: item.location });
   };
 
   // ---------- 操作 ----------
